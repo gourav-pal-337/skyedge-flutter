@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "121381801455",
+    "project_id": "skyedge-1bc41",
+    "storage_bucket": "skyedge-1bc41.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:121381801455:android:80167e2d049a2999af7a1a",
+        "android_client_info": {
+          "package_name": "com.app.skyedge"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCFMNV7jLjgTj2T6WJ93pFOfDrG_tksPfU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:121381801455:android:9a91d17a9e43d3cdaf7a1a",
+        "android_client_info": {
+          "package_name": "com.app.skyedge"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCFMNV7jLjgTj2T6WJ93pFOfDrG_tksPfU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
