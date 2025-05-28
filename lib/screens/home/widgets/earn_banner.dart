@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:skyedge/constants/app_routes.dart';
 import 'package:skyedge/constants/app_textstyle.dart';
 import 'package:skyedge/screens/home/earn/data_categories_screen.dart';
 import 'package:skyedge/screens/home/earn/earn_more_bottomsheet.dart';
@@ -45,11 +47,12 @@ class EarnBanner extends StatelessWidget {
               SizedBox(width: 12),
               GestureDetector(
                 onTap: () {
-                  showModalBottomSheet(
-                      isScrollControlled: true,
-                      backgroundColor: Colors.transparent,
-                      context: context,
-                      builder: (context) => const EarnMoreBottomsheet());
+                  // showModalBottomSheet(
+                  //     isScrollControlled: true,
+                  //     backgroundColor: Colors.transparent,
+                  //     context: context,
+                  // builder: (context) => const EarnMoreBottomsheet());
+                  context.push(AppRoutes.questionnaireScreen);
                 },
                 child: Row(
                   children: [

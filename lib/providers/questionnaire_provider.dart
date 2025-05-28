@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:skyedge/models/registration_questions_model.dart';
+import 'package:skyedge/models/user_model.dart';
+import 'package:skyedge/providers/auth_provider.dart';
 import 'package:skyedge/repositories/questionnaire_repo.dart';
+import 'package:skyedge/utils/router_util.dart';
 
 class QuestionnaireProvider extends ChangeNotifier {
   List<RegistrationQuestion> _questions = [];
@@ -12,6 +16,9 @@ class QuestionnaireProvider extends ChangeNotifier {
   final QuestionnaireRepo _questionnaireRepo = QuestionnaireRepo();
 
   List questionResponse = [];
+
+  List<dynamic> _userAnswers = [];
+  List<dynamic> get userAnswers => _userAnswers;
 
   Future<void> getRegisterationQuestions() async {
     notifyListeners();
@@ -42,7 +49,7 @@ class QuestionnaireProvider extends ChangeNotifier {
       _isSubmitting = false;
       notifyListeners();
 
-      return response?.response?.statusCode == 200;
+      return response?.response?.statusCode == 201;
     } catch (e) {
       _isSubmitting = false;
       notifyListeners();
@@ -80,6 +87,32 @@ class QuestionnaireProvider extends ChangeNotifier {
       return (response["answer_text"] as List).contains(option);
     } else {
       return response["answer_text"] == option;
+    }
+  }
+
+  Future<bool> fetchUserAnswers() async {
+    try {
+      final response = await _questionnaireRepo.getUserAnswers();
+      if (response?.response?.data != null) {
+        var data = response?.response?.data;
+        if (data['answers'] != null) {
+          UserModel userModel = UserModel.fromJson(data['user']);
+          final authProvider = Provider.of<AuthProvider>(
+              navigatorKey.currentContext!,
+              listen: false);
+          authProvider.updateUserModel(userModel);
+          _userAnswers = data['answers'];
+          if (_userAnswers.isEmpty) {
+            return false;
+          }
+          notifyListeners();
+          return true;
+        }
+      }
+      return false;
+    } catch (e) {
+      debugPrint("Error fetching user answers: $e");
+      return false;
     }
   }
 }

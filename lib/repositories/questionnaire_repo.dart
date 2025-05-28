@@ -32,4 +32,18 @@ class QuestionnaireRepo {
     }
     return null;
   }
+
+  Future<ApiResponse?> getUserAnswers() async {
+    var token = await MyLocalStorage.getToken();
+    try {
+      var res = await _apiClient.getApiResponse(
+        Endpoints.getusersAnswers,
+        headers: {"Authorization": "Bearer $token"},
+      );
+      return res;
+    } catch (e) {
+      MyLogger.log(e);
+    }
+    return null;
+  }
 }

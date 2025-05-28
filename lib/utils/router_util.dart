@@ -45,7 +45,7 @@ import 'package:skyedge/screens/wallet/verify_wallet_screen.dart';
 import 'package:skyedge/screens/wallet/wallet_history_screen.dart';
 import 'package:skyedge/screens/wallet/wallet_screen.dart';
 
-// final navigatorKey = GlobalKey<NavigatorState>();
+final navigatorKey = GlobalKey<NavigatorState>();
 
 final rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();

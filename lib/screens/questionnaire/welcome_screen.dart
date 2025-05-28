@@ -26,16 +26,33 @@ class QuestionnaireWelcomeScreen extends StatefulWidget {
 class _QuestionnaireWelcomeScreenState
     extends State<QuestionnaireWelcomeScreen> {
   final List<String> _messages = [
-    "Hey there!  I’m Skyecc, your AI guide, Let’s get to know each other a bit. You’ll earn Skyedge tokens as we chat! ",
-    "Think of them as 'YOU’RE KILLING IT' tokens – the more you do, the more you earn! "
+    "Hey there!  I'm Skyecc, your AI guide, Let's get to know each other a bit. You'll earn Skyedge tokens as we chat! ",
+    "Think of them as 'YOU'RE KILLING IT' tokens – the more you do, the more you earn! "
   ];
 
   int _welcomeScreenIndex = 0;
+  bool _isLoading = true;
 
   void getQuestions() {
     final questionnaireProv =
         Provider.of<QuestionnaireProvider>(context, listen: false);
-    questionnaireProv.getRegisterationQuestions();
+    questionnaireProv.fetchUserAnswers().then((value) {
+      if (value == false) {
+        questionnaireProv.getRegisterationQuestions().then((_) {
+          if (mounted) {
+            setState(() {
+              _isLoading = false;
+            });
+          }
+        });
+      } else {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      }
+    });
   }
 
   @override
@@ -55,91 +72,98 @@ class _QuestionnaireWelcomeScreenState
     return Scaffold(
       body: Center(
         child: SafeArea(
-          child: Column(
-            children: [
-              Align(
-                alignment: Alignment.topRight,
-                child: TextButton(
-                  style: ButtonStyle(
-                    padding: MaterialStateProperty.all<EdgeInsets>(
-                      const EdgeInsets.all(0),
-                    ),
+          child: _isLoading
+              ? const Center(
+                  child: CircularProgressIndicator(
+                    color: AppTheme.blue,
                   ),
-                  onPressed: () {
-                    // context.go(AppRoutes.registrationScreen);
-                  },
-                  child: Text(
-                    'Skip',
-                    style: AppTextStyle.body16Regular.copyWith(
-                      color: AppTheme.greyText,
-                      fontSize: 14,
-                    ),
-                  ),
-                ),
-              ),
-              10.verticalSpace,
-              Padding(
-                padding: const EdgeInsets.all(15.0),
-                child: RichText(
-                  text: TextSpan(
-                    style: AppTextStyle.title24MediumClash,
-                    children: message.split(' ').map((value) {
-                      if (value == "Skyecc," ||
-                          value == "'YOU’RE" ||
-                          value == "KILLING" ||
-                          value == "IT'") {
-                        return WidgetSpan(
-                          child: GradientText(
-                            " $value",
-                            style: AppTextStyle.title24MediumClash,
-                            gradientDirection: GradientDirection.ttb,
-                            colors: const [
-                              AppTheme.blue,
-                              AppTheme.primaryColorDark,
-                            ],
+                )
+              : Column(
+                  children: [
+                    Align(
+                      alignment: Alignment.topRight,
+                      child: TextButton(
+                        style: ButtonStyle(
+                          padding: MaterialStateProperty.all<EdgeInsets>(
+                            const EdgeInsets.all(0),
                           ),
-                        );
-                      }
-                      return WidgetSpan(
-                        child: GradientText(
-                          " $value",
-                          style: AppTextStyle.title24MediumClash,
-                          gradientDirection: GradientDirection.ttb,
-                          colors: [
-                            AppTheme.blacktextColor(context),
-                            AppTheme.blacktextColor(context)
-                          ],
                         ),
-                      );
-                    }).toList(),
-                  ),
+                        onPressed: () {
+                          context.go(AppRoutes.questionnaireScreen);
+                        },
+                        child: Text(
+                          'Skip',
+                          style: AppTextStyle.body16Regular.copyWith(
+                            color: AppTheme.greyText,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ),
+                    10.verticalSpace,
+                    Padding(
+                      padding: const EdgeInsets.all(15.0),
+                      child: RichText(
+                        text: TextSpan(
+                          style: AppTextStyle.title24MediumClash,
+                          children: message.split(' ').map((value) {
+                            if (value == "Skyecc," ||
+                                value == "'YOU'RE" ||
+                                value == "KILLING" ||
+                                value == "IT'") {
+                              return WidgetSpan(
+                                child: GradientText(
+                                  " $value",
+                                  style: AppTextStyle.title24MediumClash,
+                                  gradientDirection: GradientDirection.ttb,
+                                  colors: const [
+                                    AppTheme.blue,
+                                    AppTheme.primaryColorDark,
+                                  ],
+                                ),
+                              );
+                            }
+                            return WidgetSpan(
+                              child: GradientText(
+                                " $value",
+                                style: AppTextStyle.title24MediumClash,
+                                gradientDirection: GradientDirection.ttb,
+                                colors: [
+                                  AppTheme.blacktextColor(context),
+                                  AppTheme.blacktextColor(context)
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: Center(
+                        child: _welcomeScreenIndex == 1
+                            ? SizedBox(
+                                width: context.mediaQuery.size.width * 0.5,
+                                child: const ShowImage(
+                                    imagelink: AppAssets.coinBox))
+                            : AnimatedBall(),
+                      ),
+                    ),
+                    if (!_isLoading)
+                      SubmitButton(
+                        onTap: () {
+                          // validate();
+                          if (_welcomeScreenIndex < 1) {
+                            _welcomeScreenIndex++;
+                          } else {
+                            context.push(AppRoutes.questionnaireScreen);
+                          }
+                          setState(() {});
+                        },
+                        isAtBottom: true,
+                        label: _welcomeScreenIndex == 1 ? "Next" : "Let's go",
+                      ),
+                  ],
                 ),
-              ),
-              Expanded(
-                child: Center(
-                  child: _welcomeScreenIndex == 1
-                      ? SizedBox(
-                          width: context.mediaQuery.size.width * 0.5,
-                          child: const ShowImage(imagelink: AppAssets.coinBox))
-                      : AnimatedBall(),
-                ),
-              ),
-              if (questionnaireProv.questions.isNotEmpty)
-                SubmitButton(
-                  onTap: () {
-                    // validate();
-                    if (_welcomeScreenIndex < 1) {
-                      _welcomeScreenIndex++;
-                    } else {
-                      context.push(AppRoutes.questionnaireScreen);
-                    }
-                    setState(() {});
-                  },
-                  isAtBottom: true,
-                  label: _welcomeScreenIndex == 1 ? "Next" : "Let's go",
-                ),
-            ],
-          ),
         ),
       ),
     );

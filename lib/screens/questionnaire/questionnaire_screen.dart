@@ -8,8 +8,10 @@ import 'package:skyedge/constants/app_assets.dart';
 import 'package:skyedge/constants/app_routes.dart';
 import 'package:skyedge/constants/app_textstyle.dart';
 import 'package:skyedge/providers/questionnaire_provider.dart';
+import 'package:skyedge/providers/socket_provider.dart';
 import 'package:skyedge/screens/questionnaire/widgets/country_picker.dart';
 import 'package:skyedge/screens/questionnaire/widgets/date_picker.dart';
+import 'package:skyedge/screens/questionnaire/widgets/life_style_chat.dart';
 import 'package:skyedge/screens/questionnaire/widgets/timeline_progress.dart';
 import 'package:skyedge/theme/app_theme.dart';
 import 'package:skyedge/utils/extensions/build_context_extensions.dart';
@@ -30,10 +32,21 @@ class QuestionnaireScreen extends StatefulWidget {
 
 class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
   PageController _pageController = PageController();
-  int currentStep = 0;
+
   int currentPage = 0;
   double fraction = 0.0;
   String selectedOption = '';
+
+  getCurrentStep() {
+    var value = Provider.of<QuestionnaireProvider>(context, listen: false);
+    final socketProv = Provider.of<SocketProvider>(context, listen: false);
+    if (value.userAnswers.isEmpty) {
+      socketProv.updateLevet(0);
+    } else {
+      socketProv.updateLevet(1);
+    }
+    setState(() {});
+  }
 
   bool isQuestionAnswered(int questionId, QuestionnaireProvider provider) {
     try {
@@ -50,6 +63,8 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
   void validateAndProceed(BuildContext context) async {
     final questionnaireProv =
         Provider.of<QuestionnaireProvider>(context, listen: false);
+    final socketProv = Provider.of<SocketProvider>(context, listen: false);
+
     final currentQuestion = questionnaireProv.questions[currentPage];
 
     if (!isQuestionAnswered(currentQuestion.id!, questionnaireProv)) {
@@ -81,12 +96,19 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
             backgroundColor: Colors.green,
           ),
         );
+        var value = await context.push(AppRoutes.questionnaireCompletionScreen);
+        if (value == true) {
+          socketProv.updateLevet(1);
 
+          currentPage = 0;
+          fraction = 0;
+          setState(() {});
+        }
         // Reset and go to first page
-        currentPage = 0;
-        fraction = 0;
-        setState(() {});
-        _pageController.jumpToPage(currentPage);
+        // currentPage = 0;
+        // fraction = 0;
+        // setState(() {});
+        // _pageController.jumpToPage(currentPage);
       } else {
         // Show error message
         ScaffoldMessenger.of(context).showSnackBar(
@@ -106,12 +128,30 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
   }
 
   @override
+  void initState() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      getCurrentStep();
+    });
+    super.initState();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final socketProv = Provider.of<SocketProvider>(context);
+
     final questionnaireProv = Provider.of<QuestionnaireProvider>(context);
     var questionnaireData = questionnaireProv.questions;
     debugPrint(fraction.toString());
     return Scaffold(
-      appBar: MyAppBar(title: ""),
+      appBar: MyAppBar(
+        title: "",
+        onBackPressed: () {
+          if (socketProv.levelNumber != 0) {
+            context.read<SocketProvider>().disconnectSocket();
+          }
+          context.pop();
+        },
+      ),
       body: SafeArea(
         child: Column(
           // mainAxisAlignment: MainAxisAlignment.center,
@@ -123,206 +163,217 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
                 "Lifestyle",
                 'Hobbies & Habits',
                 "Social World",
+                "Education",
+                "Job"
               ],
-              currentStep: 0,
+              currentStep: socketProv.levelNumber,
               fraction: fraction,
             ),
-            Expanded(
-              child: PageView.builder(
-                controller: _pageController,
-                // physics: NeverScrollableScrollPhysics(), // Disable swipe
-                itemCount: questionnaireData.length,
-                itemBuilder: (context, index) {
-                  var item = questionnaireData[index];
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Align(
-                          alignment: Alignment.topRight,
-                          child: Container(
-                            padding: EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 5),
-                            decoration: BoxDecoration(
-                              color: AppTheme.grey?.withOpacity(0.2),
-                              border: Border.all(
-                                  color: AppTheme.blacktextColor(context)),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                SizedBox(
-                                  height: 20,
-                                  width: 20,
-                                  child: ShowImage(
-                                    imagelink: AppAssets.skyCoin,
-                                  ),
-                                ),
-                                5.horizontalSpace,
-                                Text(
-                                  "2 points",
-                                  style: AppTextStyle.caption12Regular
-                                      .copyWith(color: AppTheme.blue),
-                                )
-                              ],
-                            ),
-                          ),
-                        ),
-                        15.verticalSpace,
-                        Text(
-                          "${item.questionText}",
-                          style: AppTextStyle.title24MediumClash,
-                        ),
-                        // if (item['questionDec'] != null) ...[
-                        //   20.verticalSpace,
-                        //   Text(
-                        //     "${item['questionDec']}",
-                        //     style: AppTextStyle.subtitle18SemiBold,
-                        //   ),
-                        // ],
-                        // if (item['questionDec2'] != null) ...[
-                        //   Text(
-                        //     "${item['questionDec2']}",
-                        //     style: AppTextStyle.caption12Regular
-                        //         .copyWith(color: AppTheme.greyText),
-                        //   ),
-                        // ],
-                        20.verticalSpace,
-                        if (item.type == "date")
-                          CustomDatePicker(questionId: item.id!),
-                        if (item.options == null &&
-                            (item.questionText
-                                    ?.toLowerCase()
-                                    .contains("country") ??
-                                false))
-                          CountryPicker(questionId: item.id!),
-                        if (item.options != null)
-                          Expanded(
-                            child: SingleChildScrollView(
-                              child: Column(
-                                children: (item.options as List).map((value) {
-                                  var isSelected = questionnaireProv
-                                      .isOptionSelected(item.id!, value);
-                                  return GestureDetector(
-                                    onTap: () {
-                                      if (item.id == null) return;
-
-                                      if (item.type == "multiple") {
-                                        // For multiple selection, toggle the option
-                                        List<String> currentSelections = [];
-                                        if (questionnaireProv.isOptionSelected(
-                                            item.id!, "")) {
-                                          currentSelections = List<String>.from(
-                                              questionnaireProv.questionResponse
-                                                  .firstWhere((element) =>
-                                                      element["question_id"] ==
-                                                      item.id)["answer_text"]);
-                                        }
-
-                                        if (isSelected) {
-                                          currentSelections.remove(value);
-                                        } else {
-                                          currentSelections.add(value);
-                                        }
-
-                                        questionnaireProv.addQuestionResponse(
-                                            item.id!, currentSelections, true);
-                                      } else {
-                                        // For single selection
-                                        questionnaireProv.addQuestionResponse(
-                                            item.id!, value, false);
-                                      }
-                                    },
-                                    child: Container(
-                                      height: 42,
-                                      margin: const EdgeInsets.symmetric(
-                                          vertical: 10),
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 10),
-                                      width: double.infinity,
-                                      alignment: Alignment.centerLeft,
-                                      decoration: BoxDecoration(
-                                        color: isSelected
-                                            ? AppTheme.primaryColorLight
-                                                .withOpacity(0.2)
-                                            : Colors.transparent,
-                                        border: Border.all(
-                                            color: isSelected
-                                                ? AppTheme.primaryColorLight
-                                                : Colors.grey),
-                                      ),
-                                      child: Row(
-                                        children: [
-                                          if (item.type == "multiple")
-                                            Icon(
-                                              isSelected
-                                                  ? Icons.check_box
-                                                  : Icons
-                                                      .check_box_outline_blank,
-                                              color: isSelected
-                                                  ? AppTheme.primaryColorLight
-                                                  : Colors.grey,
-                                            )
-                                          else
-                                            Icon(
-                                              isSelected
-                                                  ? Icons.radio_button_checked
-                                                  : Icons
-                                                      .radio_button_unchecked,
-                                              color: isSelected
-                                                  ? AppTheme.primaryColorLight
-                                                  : Colors.grey,
-                                            ),
-                                          10.horizontalSpace,
-                                          Text("$value"),
-                                        ],
-                                      ),
+            if (socketProv.levelNumber == 0)
+              Expanded(
+                child: PageView.builder(
+                  controller: _pageController,
+                  // physics: NeverScrollableScrollPhysics(), // Disable swipe
+                  itemCount: questionnaireData.length,
+                  itemBuilder: (context, index) {
+                    var item = questionnaireData[index];
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Align(
+                            alignment: Alignment.topRight,
+                            child: Container(
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 5),
+                              decoration: BoxDecoration(
+                                color: AppTheme.grey?.withOpacity(0.2),
+                                border: Border.all(
+                                    color: AppTheme.blacktextColor(context)),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: ShowImage(
+                                      imagelink: AppAssets.skyCoin,
                                     ),
-                                  );
-                                }).toList(),
+                                  ),
+                                  5.horizontalSpace,
+                                  Text(
+                                    "2 points",
+                                    style: AppTextStyle.caption12Regular
+                                        .copyWith(color: AppTheme.blue),
+                                  )
+                                ],
                               ),
                             ),
-                          )
-                      ],
-                    ),
-                  );
-                },
+                          ),
+                          15.verticalSpace,
+                          Text(
+                            "${item.questionText}",
+                            style: AppTextStyle.title24MediumClash,
+                          ),
+                          // if (item['questionDec'] != null) ...[
+                          //   20.verticalSpace,
+                          //   Text(
+                          //     "${item['questionDec']}",
+                          //     style: AppTextStyle.subtitle18SemiBold,
+                          //   ),
+                          // ],
+                          // if (item['questionDec2'] != null) ...[
+                          //   Text(
+                          //     "${item['questionDec2']}",
+                          //     style: AppTextStyle.caption12Regular
+                          //         .copyWith(color: AppTheme.greyText),
+                          //   ),
+                          // ],
+                          20.verticalSpace,
+                          if (item.type == "date")
+                            CustomDatePicker(questionId: item.id!),
+                          if (item.options == null &&
+                              (item.questionText
+                                      ?.toLowerCase()
+                                      .contains("country") ??
+                                  false))
+                            CountryPicker(questionId: item.id!),
+                          if (item.options != null)
+                            Expanded(
+                              child: SingleChildScrollView(
+                                child: Column(
+                                  children: (item.options as List).map((value) {
+                                    var isSelected = questionnaireProv
+                                        .isOptionSelected(item.id!, value);
+                                    return GestureDetector(
+                                      onTap: () {
+                                        if (item.id == null) return;
+
+                                        if (item.type == "multiple") {
+                                          // For multiple selection, toggle the option
+                                          List<String> currentSelections = [];
+                                          if (questionnaireProv
+                                              .isOptionSelected(item.id!, "")) {
+                                            currentSelections = List<
+                                                    String>.from(
+                                                questionnaireProv
+                                                    .questionResponse
+                                                    .firstWhere((element) =>
+                                                        element[
+                                                            "question_id"] ==
+                                                        item.id)["answer_text"]);
+                                          }
+
+                                          if (isSelected) {
+                                            currentSelections.remove(value);
+                                          } else {
+                                            currentSelections.add(value);
+                                          }
+
+                                          questionnaireProv.addQuestionResponse(
+                                              item.id!,
+                                              currentSelections,
+                                              true);
+                                        } else {
+                                          // For single selection
+                                          questionnaireProv.addQuestionResponse(
+                                              item.id!, value, false);
+                                        }
+                                      },
+                                      child: Container(
+                                        height: 42,
+                                        margin: const EdgeInsets.symmetric(
+                                            vertical: 10),
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 10),
+                                        width: double.infinity,
+                                        alignment: Alignment.centerLeft,
+                                        decoration: BoxDecoration(
+                                          color: isSelected
+                                              ? AppTheme.primaryColorLight
+                                                  .withOpacity(0.2)
+                                              : Colors.transparent,
+                                          border: Border.all(
+                                              color: isSelected
+                                                  ? AppTheme.primaryColorLight
+                                                  : Colors.grey),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            if (item.type == "multiple")
+                                              Icon(
+                                                isSelected
+                                                    ? Icons.check_box
+                                                    : Icons
+                                                        .check_box_outline_blank,
+                                                color: isSelected
+                                                    ? AppTheme.primaryColorLight
+                                                    : Colors.grey,
+                                              )
+                                            else
+                                              Icon(
+                                                isSelected
+                                                    ? Icons.radio_button_checked
+                                                    : Icons
+                                                        .radio_button_unchecked,
+                                                color: isSelected
+                                                    ? AppTheme.primaryColorLight
+                                                    : Colors.grey,
+                                              ),
+                                            10.horizontalSpace,
+                                            Text("$value"),
+                                          ],
+                                        ),
+                                      ),
+                                    );
+                                  }).toList(),
+                                ),
+                              ),
+                            )
+                        ],
+                      ),
+                    );
+                  },
+                ),
               ),
-            ),
-            // ...questionnaireData[currentStep]['questions'].map((value) {
-            //   return
-            // }).toList()
+            if (socketProv.levelNumber != 0)
+              LifeStyleChat(
+                  key: Key('LifeStyleChat-${socketProv.levelNumber}'),
+                  levelNumber: socketProv.levelNumber)
           ],
         ),
       ),
-      bottomNavigationBar: Row(
-        children: [
-          Expanded(
-            child: SubmitButton(
-              onTap: () {
-                validateAndProceed(context);
-              },
-              labelsize: 13,
-              isAtBottom: true,
-              color: Colors.transparent,
-              labelColor: AppTheme.blacktextColor(context),
-              label: "Skip",
+      bottomNavigationBar: socketProv.levelNumber != 0
+          ? null
+          : Row(
+              children: [
+                Expanded(
+                  child: SubmitButton(
+                    onTap: () {
+                      validateAndProceed(context);
+                    },
+                    labelsize: 13,
+                    isAtBottom: true,
+                    color: Colors.transparent,
+                    labelColor: AppTheme.blacktextColor(context),
+                    label: "Skip",
+                  ),
+                ),
+                Expanded(
+                  child: SubmitButton(
+                    onTap: () {
+                      validateAndProceed(context);
+                    },
+                    labelsize: 13,
+                    isAtBottom: true,
+                    label: "Next",
+                  ),
+                ),
+              ],
             ),
-          ),
-          Expanded(
-            child: SubmitButton(
-              onTap: () {
-                validateAndProceed(context);
-              },
-              labelsize: 13,
-              isAtBottom: true,
-              label: "Next",
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

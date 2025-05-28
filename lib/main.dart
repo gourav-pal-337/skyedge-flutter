@@ -33,9 +33,11 @@ class MyApp extends StatelessWidget {
         providers: appProviders,
         child: MaterialApp.router(
           // ignore: avoid_redundant_argument_values
+          key: navigatorKey,
           debugShowCheckedModeBanner: false,
           theme: AppTheme.light(),
           darkTheme: AppTheme.dark(),
+
           routerConfig: RouterUtil.router,
         ),
       ),

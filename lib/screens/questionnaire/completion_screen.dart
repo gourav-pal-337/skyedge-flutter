@@ -1,10 +1,13 @@
+import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import 'package:skyedge/constants/app_assets.dart';
 import 'package:skyedge/constants/app_routes.dart';
 import 'package:skyedge/constants/app_textstyle.dart';
+import 'package:skyedge/providers/socket_provider.dart';
 import 'package:skyedge/theme/app_theme.dart';
 import 'package:skyedge/utils/extensions/build_context_extensions.dart';
 import 'package:skyedge/utils/extensions/int_extentions.dart';
@@ -16,6 +19,7 @@ class QuestionnaireCompletionScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final socketProv = Provider.of<SocketProvider>(context);
     return Scaffold(
       body: CustomPaint(
         size: MediaQuery.of(context).size,
@@ -37,7 +41,7 @@ class QuestionnaireCompletionScreen extends StatelessWidget {
                       // context.go(AppRoutes.registrationScreen);
                     },
                     child: Text(
-                      'Skip',
+                      '',
                       style: AppTextStyle.body16Regular.copyWith(
                         color: AppTheme.greyText,
                         fontSize: 14,
@@ -106,15 +110,21 @@ class QuestionnaireCompletionScreen extends StatelessWidget {
               label: "Go to Home",
             ),
           ),
-          Expanded(
-            child: SubmitButton(
-              onTap: () {},
-              labelsize: 13,
-              isAtBottom: true,
-              // tapable: ,
-              label: "Earn More",
+          if (socketProv.levelNumber != 5)
+            Expanded(
+              child: SubmitButton(
+                onTap: () {
+                  // context.pop(true);
+                  socketProv.updateLevet((socketProv.levelNumber + 1),
+                      force: true);
+                  context.push(AppRoutes.questionnaireScreen);
+                },
+                labelsize: 13,
+                isAtBottom: true,
+                // tapable: ,
+                label: "Earn More",
+              ),
             ),
-          ),
         ],
       ),
     );

@@ -171,17 +171,40 @@ class _LoginScreenState extends State<LoginScreen> {
                     validate();
                   },
                   loading: loading,
-
-                  // tapable: ,
                   label: "Signup",
                 ),
+
                 10.verticalSpace,
-                Row(
+                Center(
+                  child: TextButton(
+                    onPressed: () {
+                      context.push(AppRoutes.registrationScreen);
+                    },
+                    child: RichText(
+                      text: TextSpan(
+                        text: "Don't have an account? ",
+                        style: AppTextStyle.body14Regular.copyWith(
+                          color: AppTheme.greyText,
+                        ),
+                        children: [
+                          TextSpan(
+                            text: "Sign up",
+                            style: AppTextStyle.body14Medium600.copyWith(
+                              color: AppTheme.blue,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+
+                const Row(
                   children: [
                     Expanded(child: Divider()),
                     Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 30),
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                       child: Text("or continue with"),
                     ),
                     Expanded(child: Divider())
@@ -195,16 +218,48 @@ class _LoginScreenState extends State<LoginScreen> {
                     AppAssets.googleLogo,
                     AppAssets.fbLogo,
                     AppAssets.appleLogo
-                  ].map((value) {
-                    return Container(
-                      height: 55,
-                      width: 55,
-                      alignment: Alignment.center,
-                      margin: EdgeInsets.symmetric(horizontal: 4),
-                      decoration: BoxDecoration(
-                          color: AppTheme.grey, shape: BoxShape.circle),
-                      child: ShowImage(
-                        imagelink: value,
+                  ].asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final value = entry.value;
+                    return GestureDetector(
+                      onTap: () async {
+                        final authProvider =
+                            Provider.of<AuthProvider>(context, listen: false);
+                        bool success = false;
+
+                        switch (index) {
+                          case 0: // Google
+                            success = await authProvider.signInWithGoogle();
+                            break;
+                          case 1: // Facebook
+                            success = await authProvider.signInWithFacebook();
+                            break;
+                          case 2: // Apple
+                            success = await authProvider.signInWithApple();
+                            break;
+                        }
+
+                        if (success && context.mounted) {
+                          context.go(AppRoutes.questionnaireWelcomeScreen);
+                        } else if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Login failed. Please try again.'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                      },
+                      child: Container(
+                        height: 55,
+                        width: 55,
+                        alignment: Alignment.center,
+                        margin: const EdgeInsets.symmetric(horizontal: 10),
+                        decoration: BoxDecoration(
+                            color: AppTheme.grey, shape: BoxShape.circle),
+                        child: ShowImage(
+                          imagelink: value,
+                        ),
                       ),
                     );
                   }).toList(),

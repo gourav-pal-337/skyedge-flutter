@@ -134,7 +134,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
               children: [
                 10.verticalSpace,
                 Text(
-                  "Enter the 4-digit that we have sent via the phone number +91 813-8172-5977",
+                  "Enter the 4-digit that we have sent via the phone number +${authProv.countrycode} ${authProv.userModel.phoneNumber}",
                   style: AppTextStyle.body14Regular
                       .copyWith(color: AppTheme.greyText),
                 ),
